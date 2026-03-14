@@ -167,8 +167,9 @@ def handle_model(message):
     )
     bot.send_message(message.chat.id, "Выберите модель:", reply_markup=markup)
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("model_"))
+@bot.callback_query_handler(func=lambda call: True)
 def handle_model_choice(call):
+    logger.info(f"Callback data: {call.data}")  # <-- логируем данные кнопки
     user_id = call.from_user.id
     if call.data == "model_chatgpt":
         user_models[user_id] = 'chatgpt'
@@ -185,14 +186,10 @@ def handle_model_choice(call):
         )
     except Exception as e:
         logger.error(f"Ошибка при редактировании сообщения кнопки: {e}")
-        # fallback: отправляем новое сообщение
         bot.send_message(call.message.chat.id, f"Модель изменена на: {user_models[user_id].upper()}")
 
 @bot.message_handler(content_types=['text'])
 def handle_text_message(message):
-    # Игнорируем callback query, которые иногда приходят как текст
-    if hasattr(message, 'data'):
-        return
     user_id = message.from_user.id
     response = get_response(message.text, user_id)
     bot.reply_to(message, response)
