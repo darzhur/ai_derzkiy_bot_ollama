@@ -15,7 +15,4 @@ RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Запуск бота
-# CMD ["python3", "bot.py"]
-
-# Запуск скрипта, который стартует Ollama и бот
-CMD ["python3", "start_bot_with_ollama.py"]
+CMD ["python3", "bot.py"]
