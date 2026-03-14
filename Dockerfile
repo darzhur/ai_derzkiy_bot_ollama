@@ -20,5 +20,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Установка Ollama (если можно) и запуск сервера в фоне
 RUN ollama pull llama3.2  # если модель ещё не загружена
 
-# Фоновый запуск Ollama
-CMD ollama serve & python3 bot.py
+# Запуск скрипта, который стартует Ollama и бот
+CMD ["python3", "start_bot_with_ollama.py"]

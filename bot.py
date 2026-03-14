@@ -7,9 +7,34 @@ from typing import List, Dict
 from dotenv import load_dotenv
 from yandex_ai_studio_sdk import AIStudio
 import requests
+import signal
+import subprocess
+
+# Проверка и убийство старого экземпляра бота
+def kill_old_bot():
+    try:
+        out = subprocess.check_output(["pgrep", "-f", "bot.py"])
+        for pid in out.splitlines():
+            os.kill(int(pid), signal.SIGKILL)
+        print("Старый бот остановлен")
+    except subprocess.CalledProcessError:
+        print("Старый бот не найден")
+
+kill_old_bot()
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
+
+# Проверка доступности Ollama перед запуском
+while True:
+    try:
+        r = requests.get(OLLAMA_URL)
+        if r.status_code == 200:
+            print("Ollama доступна, продолжаем запуск бота...")
+            break
+    except requests.exceptions.ConnectionError:
+        print("Ожидаем Ollama...")
+        time.sleep(1)
 
 def get_ollama_response(user_message: str) -> str:
     try:
@@ -172,7 +197,17 @@ def get_yandex_response(user_message: str) -> str:
         logger.error(f"Ошибка при запросе к YandexGPT: {str(e)}")
         return f"Ошибка: Не удалось получить ответ от YandexGPT. {str(e)}"
 
-
+# В bot.py, рядом с функциями get_chatgpt_response / get_yandex_response
+def get_ollama_response(prompt: str) -> str:
+    try:
+        payload = {"model": OLLAMA_MODEL, "prompt": prompt}
+        r = requests.post(f"{OLLAMA_URL}/v1/completions", json=payload)
+        r.raise_for_status()
+        return r.json()["choices"][0]["text"].strip()
+    except Exception as e:
+        print(f"Ollama error: {e}")
+        return "Ошибка при работе с Ollama."
+    
 def get_response(user_message: str, user_id: int) -> str:
     model = user_models.get(user_id, DEFAULT_MODEL)
 
