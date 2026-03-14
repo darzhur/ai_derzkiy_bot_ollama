@@ -30,7 +30,7 @@ if not TELEGRAM_TOKEN or not PROXYAPI_KEY:
     raise ValueError("TELEGRAM_BOT_TOKEN или PROXYAPI_KEY не установлены")
 
 # Инициализация бота
-bot = telebot.TeleBot(TELEGRAM_TOKEN)
+bot = telebot.TeleBot(TELEGRAM_TOKEN, threaded=True, skip_pending=True)
 
 # Настройка OpenAI ProxyAPI
 openai.api_key = PROXYAPI_KEY
@@ -105,7 +105,7 @@ def get_yandex_response(user_message: str) -> str:
         return "Ошибка при работе с YandexGPT."
 
         # ====================== Safe call для моделей ======================
-def safe_model_call(func, *args, timeout_sec=10):
+def safe_model_call(func, *args, timeout_sec=60):
     """
     Вызывает функцию модели с обработкой ошибок и таймаутом.
     Если модель зависает или падает — возвращает сообщение об ошибке.
@@ -133,11 +133,11 @@ def get_response(user_message: str, user_id: int) -> str:
     model = user_models.get(user_id, DEFAULT_MODEL)
 # новый вариант с таймаутом 10 секунд
     if model == 'yandex':
-        return safe_model_call(get_yandex_response, user_message, timeout_sec=10)
+        return safe_model_call(get_yandex_response, user_message, timeout_sec=60)
     elif model == 'ollama':
-        return safe_model_call(get_ollama_response, user_message, timeout_sec=10)
+        return safe_model_call(get_ollama_response, user_message, timeout_sec=60)
     else:
-        return safe_model_call(get_chatgpt_response, user_message, timeout_sec=10)
+        return safe_model_call(get_chatgpt_response, user_message, timeout_sec=60)
 
 # ====================== Хэндлеры Telegram ======================
 
@@ -205,4 +205,11 @@ def handle_non_text_message(message):
 
 if __name__ == '__main__':
     logger.info("Бот запущен")
+    # Очистка старых апдейтов
+    try:
+        updates = bot.get_updates()
+        if updates:
+            logger.info(f"Очищено {len(updates)} старых апдейтов")
+    except Exception as e:
+        logger.warning(f"Не удалось очистить старые апдейты: {e}")
     bot.infinity_polling()
