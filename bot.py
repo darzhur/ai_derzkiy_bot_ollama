@@ -138,7 +138,7 @@ def get_response(user_message: str, user_id: int) -> str:
 @bot.message_handler(commands=['start'])
 def handle_start(message):
     welcome_text = (
-        f"Привет! 👋\nЯ дерзкий бот. Модель: {user_models.get(message.from_user.id, DEFAULT_MODEL).upper()}\n"
+        f"Привет! 👋\nЯ ОЧЕНЬ дерзкий бот. Модель: {user_models.get(message.from_user.id, DEFAULT_MODEL).upper()}\n"
         "Просто отправь сообщение, я отвечу."
     )
     bot.send_message(message.chat.id, welcome_text)
