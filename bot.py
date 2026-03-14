@@ -45,22 +45,21 @@ user_models: Dict[int, str] = {}
 DEFAULT_MODEL = 'ollama'
 
 # Проверка доступности Ollama
-while True:
-    try:
-        r = requests.get(OLLAMA_URL)
-        if r.status_code == 200:
-            logger.info("Ollama доступна")
-            break
-    except requests.exceptions.ConnectionError:
-        logger.info("Ждем Ollama...")
-        time.sleep(1)
+try:
+    r = requests.get(OLLAMA_URL, timeout=5)
+    if r.status_code == 200:
+        logger.info("Ollama доступна")
+    else:
+        logger.warning(f"Ollama вернула статус {r.status_code}")
+except requests.exceptions.RequestException:
+    logger.warning("Ollama недоступна при старте")
 
 # ====================== Функции для моделей ======================
 
 def get_ollama_response(user_message: str) -> str:
     try:
         payload = {"model": OLLAMA_MODEL, "prompt": f"{SYSTEM_MESSAGE}\n\nПользователь: {user_message}\nОтвет:", "stream": False}
-        r = requests.post(f"{OLLAMA_URL}/api/generate", json=payload, timeout=120)
+        r = requests.post(f"{OLLAMA_URL}/api/generate", json=payload, timeout=10)
         r.raise_for_status()
         data = r.json()
         return data.get("response", "Ollama вернула пустой ответ").strip()
@@ -105,14 +104,40 @@ def get_yandex_response(user_message: str) -> str:
         logger.error(f"YandexGPT error: {e}")
         return "Ошибка при работе с YandexGPT."
 
+        # ====================== Safe call для моделей ======================
+def safe_model_call(func, *args, timeout_sec=10):
+    """
+    Вызывает функцию модели с обработкой ошибок и таймаутом.
+    Если модель зависает или падает — возвращает сообщение об ошибке.
+    """
+    import threading
+
+    result = ["Модель временно недоступна"]
+
+    def target():
+        try:
+            result[0] = func(*args)
+        except Exception as e:
+            logger.error(f"Ошибка модели {func.__name__}: {e}")
+            result[0] = f"Ошибка работы модели {func.__name__}"
+
+    thread = threading.Thread(target=target)
+    thread.start()
+    thread.join(timeout=timeout_sec)
+    if thread.is_alive():
+        logger.warning(f"Таймаут {timeout_sec} секунд для модели {func.__name__}")
+        return f"{func.__name__} не ответила за {timeout_sec} секунд"
+    return result[0]
+
 def get_response(user_message: str, user_id: int) -> str:
     model = user_models.get(user_id, DEFAULT_MODEL)
+# новый вариант с таймаутом 10 секунд
     if model == 'yandex':
-        return get_yandex_response(user_message)
+        return safe_model_call(get_yandex_response, user_message, timeout_sec=10)
     elif model == 'ollama':
-        return get_ollama_response(user_message)
+        return safe_model_call(get_ollama_response, user_message, timeout_sec=10)
     else:
-        return get_chatgpt_response(user_message)
+        return safe_model_call(get_chatgpt_response, user_message, timeout_sec=10)
 
 # ====================== Хэндлеры Telegram ======================
 
@@ -151,11 +176,17 @@ def handle_model_choice(call):
         user_models[user_id] = 'yandex'
     elif call.data == "model_ollama":
         user_models[user_id] = 'ollama'
-    bot.edit_message_text(
-        chat_id=call.message.chat.id,
-        message_id=call.message.message_id,
-        text=f"Модель изменена на: {user_models[user_id].upper()}"
-    )
+
+    try:
+        bot.edit_message_text(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            text=f"Модель изменена на: {user_models[user_id].upper()}"
+        )
+    except Exception as e:
+        logger.error(f"Ошибка при редактировании сообщения кнопки: {e}")
+        # fallback: отправляем новое сообщение
+        bot.send_message(call.message.chat.id, f"Модель изменена на: {user_models[user_id].upper()}")
 
 @bot.message_handler(content_types=['text'])
 def handle_text_message(message):
