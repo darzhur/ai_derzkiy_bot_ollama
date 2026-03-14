@@ -153,36 +153,30 @@ def handle_models(message):
 
 @bot.message_handler(commands=['model'])
 def handle_model(message):
-    markup = telebot.types.InlineKeyboardMarkup()
-    markup.add(
-        telebot.types.InlineKeyboardButton("ChatGPT", callback_data="model_chatgpt"),
-        telebot.types.InlineKeyboardButton("YandexGPT", callback_data="model_yandex"),
-        telebot.types.InlineKeyboardButton("Ollama", callback_data="model_ollama")
+    text = (
+        "Выбери модель командой:\n"
+        "/model_chatgpt — ChatGPT\n"
+        "/model_yandex — YandexGPT\n"
+        "/model_ollama — Ollama\n"
+        f"Текущая модель: {user_models.get(message.from_user.id, DEFAULT_MODEL).upper()}"
     )
-    bot.send_message(message.chat.id, "Выберите модель:", reply_markup=markup)
+    bot.send_message(message.chat.id, text)
 
-# Обработчик callback query кнопок
-@bot.callback_query_handler(func=lambda call: call.data.startswith("model_"))
-def handle_model_choice(call):
-    logger.info(f"Callback data: {call.data}")
-    user_id = call.from_user.id
-    if call.data == "model_chatgpt":
-        user_models[user_id] = 'chatgpt'
-    elif call.data == "model_yandex":
-        user_models[user_id] = 'yandex'
-    elif call.data == "model_ollama":
-        user_models[user_id] = 'ollama'
+@bot.message_handler(commands=['model_chatgpt'])
+def set_chatgpt_model(message):
+    user_models[message.from_user.id] = 'chatgpt'
+    bot.reply_to(message, "Модель изменена на ChatGPT")
 
-    try:
-        bot.edit_message_text(
-            chat_id=call.message.chat.id,
-            message_id=call.message.message_id,
-            text=f"Модель изменена на: {user_models[user_id].upper()}"
-        )
-    except Exception as e:
-        logger.error(f"Ошибка при редактировании сообщения кнопки: {e}")
-        bot.send_message(call.message.chat.id, f"Модель изменена на: {user_models[user_id].upper()}")
+@bot.message_handler(commands=['model_yandex'])
+def set_yandex_model(message):
+    user_models[message.from_user.id] = 'yandex'
+    bot.reply_to(message, "Модель изменена на YandexGPT")
 
+@bot.message_handler(commands=['model_ollama'])
+def set_ollama_model(message):
+    user_models[message.from_user.id] = 'ollama'
+    bot.reply_to(message, "Модель изменена на Ollama")
+    
 # Текстовые сообщения отдельно
 @bot.message_handler(content_types=['text'])
 def handle_text_message(message):
