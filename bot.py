@@ -144,7 +144,7 @@ def get_response(user_message: str, user_id: int) -> str:
 @bot.message_handler(commands=['start'])
 def handle_start(message):
     welcome_text = (
-        f"Привет! 👋\nТы дерзкий бот. Модель: {user_models.get(message.from_user.id, DEFAULT_MODEL).upper()}\n"
+        f"Привет! 👋\nЯ дерзкий бот. Модель: {user_models.get(message.from_user.id, DEFAULT_MODEL).upper()}\n"
         "Просто отправь сообщение, я отвечу."
     )
     bot.send_message(message.chat.id, welcome_text)
@@ -190,6 +190,9 @@ def handle_model_choice(call):
 
 @bot.message_handler(content_types=['text'])
 def handle_text_message(message):
+    # Игнорируем callback query, которые иногда приходят как текст
+    if hasattr(message, 'data'):
+        return
     user_id = message.from_user.id
     response = get_response(message.text, user_id)
     bot.reply_to(message, response)
