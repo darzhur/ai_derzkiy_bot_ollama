@@ -104,14 +104,9 @@ def get_yandex_response(user_message: str) -> str:
         logger.error(f"YandexGPT error: {e}")
         return "Ошибка при работе с YandexGPT."
 
-        # ====================== Safe call для моделей ======================
+# ====================== Safe call для моделей ======================
 def safe_model_call(func, *args, timeout_sec=60):
-    """
-    Вызывает функцию модели с обработкой ошибок и таймаутом.
-    Если модель зависает или падает — возвращает сообщение об ошибке.
-    """
     import threading
-
     result = ["Модель временно недоступна"]
 
     def target():
@@ -131,7 +126,6 @@ def safe_model_call(func, *args, timeout_sec=60):
 
 def get_response(user_message: str, user_id: int) -> str:
     model = user_models.get(user_id, DEFAULT_MODEL)
-# новый вариант с таймаутом 10 секунд
     if model == 'yandex':
         return safe_model_call(get_yandex_response, user_message, timeout_sec=60)
     elif model == 'ollama':
@@ -167,9 +161,10 @@ def handle_model(message):
     )
     bot.send_message(message.chat.id, "Выберите модель:", reply_markup=markup)
 
-@bot.callback_query_handler(func=lambda call: True)
+# Обработчик callback query кнопок
+@bot.callback_query_handler(func=lambda call: call.data.startswith("model_"))
 def handle_model_choice(call):
-    logger.info(f"Callback data: {call.data}")  # <-- логируем данные кнопки
+    logger.info(f"Callback data: {call.data}")
     user_id = call.from_user.id
     if call.data == "model_chatgpt":
         user_models[user_id] = 'chatgpt'
@@ -188,6 +183,7 @@ def handle_model_choice(call):
         logger.error(f"Ошибка при редактировании сообщения кнопки: {e}")
         bot.send_message(call.message.chat.id, f"Модель изменена на: {user_models[user_id].upper()}")
 
+# Текстовые сообщения отдельно
 @bot.message_handler(content_types=['text'])
 def handle_text_message(message):
     user_id = message.from_user.id
@@ -202,7 +198,6 @@ def handle_non_text_message(message):
 
 if __name__ == '__main__':
     logger.info("Бот запущен")
-    # Очистка старых апдейтов
     try:
         updates = bot.get_updates()
         if updates:
