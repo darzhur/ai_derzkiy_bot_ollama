@@ -140,7 +140,8 @@ def get_response(user_message: str, user_id: int) -> str:
 def handle_start(message):
     welcome_text = (
         f"Привет! 👋\nЯ ОЧЕНЬ дерзкий бот. Модель: {user_models.get(message.from_user.id, DEFAULT_MODEL).upper()}\n"
-        "Просто отправь сообщение, я отвечу."
+        "Нажми /model для выбора модели.\n"
+        "Или просто отправь сообщение, я отвечу."
     )
     markup = types.ReplyKeyboardRemove()  # убираем старые кнопки
     bot.send_message(message.chat.id, welcome_text, reply_markup=markup)
@@ -150,7 +151,6 @@ def handle_menu(message):
     text = (
         "Главное меню:\n"
         "/model — выбрать модель\n"
-        "/models — список моделей\n"
     )
     markup = types.ReplyKeyboardRemove()
     bot.send_message(message.chat.id, text, reply_markup=markup)
