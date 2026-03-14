@@ -7,6 +7,7 @@ import requests
 from typing import List, Dict
 from dotenv import load_dotenv
 from yandex_ai_studio_sdk import AIStudio
+from telebot import types
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -141,7 +142,8 @@ def handle_start(message):
         f"Привет! 👋\nЯ ОЧЕНЬ дерзкий бот. Модель: {user_models.get(message.from_user.id, DEFAULT_MODEL).upper()}\n"
         "Просто отправь сообщение, я отвечу."
     )
-    bot.send_message(message.chat.id, welcome_text)
+    markup = types.ReplyKeyboardRemove()  # убираем старые кнопки
+    bot.send_message(message.chat.id, welcome_text, reply_markup=markup)
 
 @bot.message_handler(commands=['menu'])
 def handle_menu(message):
@@ -150,7 +152,8 @@ def handle_menu(message):
         "/model — выбрать модель\n"
         "/models — список моделей\n"
     )
-    bot.send_message(message.chat.id, text)
+    markup = types.ReplyKeyboardRemove()
+    bot.send_message(message.chat.id, text, reply_markup=markup)
 
 @bot.message_handler(commands=['choose_model'])
 def handle_choose_model(message):
@@ -161,7 +164,8 @@ def handle_choose_model(message):
         "/model_ollama — Ollama\n"
         f"Текущая модель: {user_models.get(message.from_user.id, DEFAULT_MODEL).upper()}"
     )
-    bot.send_message(message.chat.id, text)
+    markup = types.ReplyKeyboardRemove()
+    bot.send_message(message.chat.id, text, reply_markup=markup)
 
 @bot.message_handler(commands=['model'])
 def handle_model(message):
