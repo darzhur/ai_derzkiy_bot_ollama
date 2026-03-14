@@ -15,4 +15,10 @@ RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Запуск бота
-CMD ["python3", "bot.py"]
+# CMD ["python3", "bot.py"]
+
+# Установка Ollama (если можно) и запуск сервера в фоне
+RUN ollama pull llama3.2  # если модель ещё не загружена
+
+# Фоновый запуск Ollama
+CMD ollama serve & python3 bot.py
