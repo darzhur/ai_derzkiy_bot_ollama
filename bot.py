@@ -143,10 +143,22 @@ def handle_start(message):
     )
     bot.send_message(message.chat.id, welcome_text)
 
-@bot.message_handler(commands=['models'])
-def handle_models(message):
+@bot.message_handler(commands=['menu'])
+def handle_menu(message):
     text = (
-        "Доступные модели:\n1️⃣ ChatGPT/ProxyAPI\n2️⃣ YandexGPT\n3️⃣ Ollama\n"
+        "Главное меню:\n"
+        "/model — выбрать модель\n"
+        "/models — список моделей\n"
+    )
+    bot.send_message(message.chat.id, text)
+
+@bot.message_handler(commands=['choose_model'])
+def handle_choose_model(message):
+    text = (
+        "Выбор модели:\n"
+        "/model_chatgpt — ChatGPT\n"
+        "/model_yandex — YandexGPT\n"
+        "/model_ollama — Ollama\n"
         f"Текущая модель: {user_models.get(message.from_user.id, DEFAULT_MODEL).upper()}"
     )
     bot.send_message(message.chat.id, text)
@@ -176,7 +188,7 @@ def set_yandex_model(message):
 def set_ollama_model(message):
     user_models[message.from_user.id] = 'ollama'
     bot.reply_to(message, "Модель изменена на Ollama")
-    
+
 # Текстовые сообщения отдельно
 @bot.message_handler(content_types=['text'])
 def handle_text_message(message):
