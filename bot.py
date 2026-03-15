@@ -8,6 +8,7 @@ from typing import List, Dict
 from dotenv import load_dotenv
 from yandex_ai_studio_sdk import AIStudio
 from telebot import types
+import os
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -18,6 +19,17 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+SOURCE_TOKEN = os.getenv("SRC_TOKEN")
+
+from logtail import LogtailHandler
+
+if SOURCE_TOKEN:
+    logtail_handler = LogtailHandler(source_token=SOURCE_TOKEN)
+    logger.addHandler(logtail_handler)
+    logger.info("Logtail интегрирован и готов к отправке логов")
+else:
+    logger.warning("SOURCE_TOKEN не найден — логи не будут уходить в BetterStack")
 
 # Переменные окружения
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
@@ -197,8 +209,22 @@ def set_ollama_model(message):
 @bot.message_handler(content_types=['text'])
 def handle_text_message(message):
     user_id = message.from_user.id
-    response = get_response(message.text, user_id)
-    bot.reply_to(message, response)
+    try:
+        response = get_response(message.text, user_id)
+        bot.reply_to(message, response)
+
+        if SOURCE_TOKEN:
+            logger.info(
+                "User message",
+                extra={
+                    "user_id": user_id,
+                    "username": message.from_user.username,
+                    "message_text": message.text
+                }
+            )
+    except Exception as e:
+        logger.exception("Ошибка при обработке сообщения")
+        bot.reply_to(message, "Произошла ошибка при обработке вашего сообщения.")
 
 @bot.message_handler(content_types=['photo', 'video', 'audio', 'document', 'voice'])
 def handle_non_text_message(message):
