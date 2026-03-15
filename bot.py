@@ -214,14 +214,7 @@ def handle_text_message(message):
         bot.reply_to(message, response)
 
         if SOURCE_TOKEN:
-            logger.info(
-                "User message",
-                extra={
-                    "user_id": user_id,
-                    "username": message.from_user.username,
-                    "message_text": message.text
-                }
-            )
+            logger.info(f"User {user_id} ({message.from_user.username or ''}): {message.text} | Bot: {response}")
     except Exception as e:
         logger.exception("Ошибка при обработке сообщения")
         bot.reply_to(message, "Произошла ошибка при обработке вашего сообщения.")
